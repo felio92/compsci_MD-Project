@@ -36,9 +36,8 @@ class potentials(object):
         pot = pot_rep - pot_atr
         return np.sum(pot, axis=-1)
     
-    def harmonic(coord, r0, k, pbc=False):
-        vectors = distances.vectors(coord, pbc)
-        return k/2*(np.linalg.norm(r - r0, axis=-1))**2
+    def harmonic(coord, r0=0, k=1):
+        return k/2*(np.linalg.norm(coord - r0, axis=-1))**2
 
 
 # In[3]:
@@ -61,4 +60,7 @@ class gradients(object):
         D_rep = -12 * sig**12 * dist**14
         D = 4*(eps*(D_att + D_rep))[:, :, None]*vectors
         return np.sum(D, axis=-2)
+    
+    def harmonic(coord, r0=0, k=1):
+        return -k*(coord- r0)
 
