@@ -62,5 +62,5 @@ class gradients(object):
         return np.sum(D, axis=-2)
     
     def harmonic(coord, r0=0, k=1):
-        return -k*(coord- r0)
+        return k*(coord - r0)
 
