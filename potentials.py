@@ -1,32 +1,17 @@
-
-# coding: utf-8
-
-# In[1]:
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 import distances
-#%load_ext line_profiler
-
-
-# In[2]:
-
 
 class potentials(object):
         
-    def coulomb(coord, q, eps0=1, pbc=False):
-        vectors = distances.vectors(coord, pbc)
-        dist = distances.distances(vectors)
+    def coulomb(dist, q, eps0=1):
         if dist.ndim!=0:
             dist[dist!=0] = 1/dist[dist!=0]
         else:
             dist = 1/dist
         return 1/(4*np.pi*eps0) * np.dot(dist, q)
     
-    def LJ(coord, eps=1, sig=1, pbc=False):
-        vectors = distances.vectors(coord, pbc)
-        dist = distances.distances(vectors)
+    def LJ(dist, eps=1, sig=1):
         if dist.ndim!=0:
             dist[dist!=0] = 1/dist[dist!=0]
         else:
@@ -38,10 +23,6 @@ class potentials(object):
     
     def harmonic(coord, r0=0, k=1):
         return k/2*(np.linalg.norm(coord - r0, axis=-1))**2
-
-
-# In[3]:
-
 
 class gradients(object):
 
