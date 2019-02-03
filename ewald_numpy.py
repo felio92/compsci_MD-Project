@@ -31,11 +31,11 @@ class Ewald(object):
             self.n_array = np.mgrid[-self.nm:self.nm+1,-self.nm:self.nm+1,-self.nm:self.nm+1].reshape(3,-1).T
         if self.kc != params[3]:
             self.kc = params[3]
-            self.k_array = np.asarray([[i,j, k] 
-                                   for i in range(int(self.kc)+1) 
+            self.k_array = np.asarray([[i,j, k]
+                                   for i in range(int(self.kc)+1)
                                    for j in range(int((self.kc**2-i**2)**(1/2))+1)
                                    for k in range(int((self.kc**2-i**2-j**2)**(1/2)+1)) if (i,j,k)!=(0,0,0)])
-            self.k_array = np.concatenate([[i,j,1]*self.k_array for i in [-1, 1] for j in [-1, 1]]) 
+            self.k_array = np.concatenate([[i,j,1]*self.k_array for i in [-1, 1] for j in [-1, 1]])
               
     def pot_sr(self, coord):
         i_dvec = self.n_array[:,None,None]-vectors(coord, self.boxsize)
@@ -47,7 +47,7 @@ class Ewald(object):
     
     def S(self,coord):
         #calculates the absolute squared of S(k) (structure factor inside imaginary part of Ewald sum)
-        k_r = np.tensordot(self.k_array,coord, axes=(-1, -1)) #calculates the scalar product of all k-vectors with the position vectors k_r[i,j] = dot(k[i],r[j]) 
+        k_r = np.tensordot(self.k_array,coord, axes=(-1, -1)) #calculates the scalar product of all k-vectors with the position vectors k_r[i,j] = dot(k[i],r[j])
         s_re = np.tensordot(self.q, np.cos(2*np.pi*k_r), axes=(-1, -1))
         s_im = np.tensordot(self.q, np.sin(2*np.pi*k_r), axes=(-1, -1))
         return s_re**2 + s_im**2
