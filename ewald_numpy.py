@@ -1,3 +1,7 @@
+import numpy as np
+from distances import *
+from scipy.special import erfc
+
 class Ewald(object):
     #To Do: Better documentation so that retracing the programming steps becomes easier.
     def __init__(self, charges, boxsize,alpha, r_cutoff, n_max, k_cutoff):
