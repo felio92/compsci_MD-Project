@@ -3,16 +3,31 @@ import matplotlib.pyplot as plt
 import distances
 
 class potentials(object):
-        
-    def coulomb(dist, q, eps0=1):
+    '''Potentials class containing class methods to calculate a number of different potentials relevant to MD-simulations. The potentials available are:
+    -coulomb(dist, q) 
+    -LJ(dist, eps=1, sig=1)
+    -harmonic(coord, boxsize, pbc=False, r0=0, k=1)
+    All inputs are assumed to be dimensionless, with the parameters being expressed in atomic units. More information can be found in the docstring of the respective potential.'''
+    def coulomb(dist, q):
+        '''Calculate the scalar coulomb potential in atomic units of n charged particles. Input values for this function are:
+        -dist, the pairwise distances of the particles as a (n x n) numpy array, expressed in bohr radii.
+        -q, a numpy array containing the particle charges.
+        Output is the total coulomb potential expressed in hartree.'''
         if dist.ndim!=0:
+            #Prevent division by zero.
             dist[dist!=0] = 1/dist[dist!=0]
         else:
             dist = 1/dist
-        return 1/(4*np.pi*eps0) * np.dot(dist, q)
+        return np.dot(dist, q)
     
     def LJ(dist, eps=1, sig=1):
+        '''Calculate the scalar Lennard Jones potential in atomic units of n particles. Input values for this function are:
+        -dist, the pairwise distances of the particles as a (n x n) numpy array expressed in bohr radii.
+        -eps, depth of the potential well expressed in hartree. Can be either a scalar or (n x n) numpy array.
+        -sig, root of potential expressed in bohr radii. Can be either a scalar or a (n x n) numpy array.
+        Output is the total LJ potential in hartree.'''
         if dist.ndim!=0:
+            #Prevent division by zero.
             dist[dist!=0] = 1/dist[dist!=0]
         else:
             dist = 1/dist
@@ -22,6 +37,13 @@ class potentials(object):
         return np.sum(pot, axis=-1)
     
     def harmonic(coord, boxsize, pbc=False, r0=0, k=1):
+        '''Calculate the potential of n particles inside a harmonic potential. Input values for this function are:
+        -coord, the particle positions given in bohr radii.
+        -boxsize, a tuple consisting of the starting value of the box edge and the end value, given in bohr radii. This parameter only has an effect in the case of periodic boundary conditions.
+        -pbc, boolean defining, if the boundary conditions are periodic or not.
+        -r0, origin of the harmonic well in bohr radii. Can be either a scalar or a vector with the same dimensions as the particle coordinates.
+        -k, strength of the harmonic potential expressed in [hartree]/[bohr radius]^2
+        Output is the total harmonic potential in hartree.'''
         vecs = coord - r0
         max_a = boxsize[1] - boxsize[0]
         if pbc:
@@ -29,14 +51,27 @@ class potentials(object):
         return k/2*(np.linalg.norm(vecs, axis=-1))**2
 
 class gradients(object):
-
-    def coulomb(vecs, q, eps0=1):
+    '''Gradients class containing class methods to calculate a number of different forces relevant to MD-simulations. The forces available are:
+        -coulomb(vecs, q) 
+        -LJ(vecs, eps=1, sig=1)
+        -harmonic(coord, boxsize, pbc=False, r0=0, k=1)
+        All inputs are assumed to be dimensionless, with the parameters being expressed in atomic units. More information can be found in the docstring of the respective gradient.'''
+    def coulomb(vecs, q):
+        '''Calculate the coulomb force in atomic units for n charged particles. Input values for this function are:
+        -vecs, the pairwise distance vectors of the particles as a (n x n x dim) numpy array, expressed in bohr radii.
+        -q, a numpy array containing the particle charges, expressed in elementary charges.
+        Output is a (n x dim) numpy array containing the forces acting on each particle, expressed in [hartree]/[bohr radius].'''
         dist = distances.distances(vecs)
-        dist[dist!=0] = 1/dist[dist!=0]**3
+        dist[dist!=0] = 1/dist[dist!=0]**3 #prevent division by zero
         D = dist[:,:,None]*vecs
         return q[:, None]*np.einsum("ijk, j",D, q)
     
-    def LJ(vecs, sig=1, eps=1):
+    def LJ(vecs, eps=1, sig=1):
+        '''Calculate the Lennard Jones force in atomic units for n particles. Input values for this function are:
+-vecs, the pairwise distance vectors of the particles as a (n x n x dim) numpy array, expressed in bohr radii.
+-eps, depth of the potential well expressed in hartree. Can be either a scalar or (n x n) numpy array.
+        -sig, root of potential expressed in bohr radii. Can be either a scalar or a (n x n) numpy array.
+Output is a (n x dim) numpy array containing the forces acting on each particle, expressed in [hartree]/[bohr radius].'''
         dist = distances.distances(vecs)
         dist[dist!=0] = 1/dist[dist!=0]
         D_att = 6 * sig**6 * dist**8
@@ -45,6 +80,14 @@ class gradients(object):
         return np.sum(D, axis=-2)
     
     def harmonic(coord, boxsize, pbc=False, r0=0, k=1):
+        '''Calculate the harmonic force in atomic units for n particles. Input values for this function are:
+        -coord, the particle positions given in bohr radii.
+        -boxsize, a tuple consisting of the starting value of the box edge and the end value, given in bohr radii. This parameter only has an effect in the case of periodic boundary conditions.
+        -pbc, boolean defining, if the boundary conditions are periodic or not.
+        -r0, origin of the harmonic well in bohr radii. Can be either a scalar or a vector with the same dimensions as the particle coordinates.
+        -k, strength of the harmonic potential expressed in [hartree]/[bohr radius]^2
+        Output is a (n x dim) numpy array containing the forces acting on each particle, expressed in [hartree]/[bohr radius].
+        '''
         max_a = boxsize[1] - boxsize[0]
         vecs = coord - r0
         if pbc:
