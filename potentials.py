@@ -13,12 +13,13 @@ class potentials(object):
         -dist, the pairwise distances of the particles as a (n x n) numpy array, expressed in bohr radii.
         -q, a numpy array containing the particle charges.
         Output is the total coulomb potential expressed in hartree.'''
-        if dist.ndim!=0:
+        d = np.copy(dist)
+        if d.ndim!=0:
             #Prevent division by zero.
-            dist[dist!=0] = 1/dist[dist!=0]
+            d[d!=0] = 1/d[d!=0]
         else:
-            dist = 1/dist
-        return np.dot(dist, q)
+            d = 1/d
+        return np.dot(d, q)
     
     def LJ(dist, eps=1, sig=1):
         '''Calculate the scalar Lennard Jones potential in atomic units of n particles. Input values for this function are:
@@ -26,15 +27,43 @@ class potentials(object):
         -eps, depth of the potential well expressed in hartree. Can be either a scalar or (n x n) numpy array.
         -sig, root of potential expressed in bohr radii. Can be either a scalar or a (n x n) numpy array.
         Output is the total LJ potential in hartree.'''
-        if dist.ndim!=0:
+        d = np.copy(dist)
+        if d.ndim!=0:
             #Prevent division by zero.
-            dist[dist!=0] = 1/dist[dist!=0]
+            d[d!=0] = 1/d[d!=0]
         else:
-            dist = 1/dist
-        pot_rep = np.dot(eps*sig**12,dist**12) 
-        pot_atr = np.dot(eps*sig**6,dist**6)
-        pot = pot_rep - pot_atr
+            d = 1/d
+        pot_rep = np.dot(eps*sig**12,d**12) 
+        pot_atr = np.dot(eps*sig**6,d**6)
+        pot = 4*(pot_rep - pot_atr)
         return np.sum(pot, axis=-1)
+    
+    def LJ_cut(dist, eps=1, sig=1, cutoff=2.5):
+        '''Calculate the shifted scalar Lennard Jones potential in atomic units of n particles with a cutoff being applied. Input values for this function are:
+        -dist, the pairwise distances of the particles as a (n x n) numpy array expressed in bohr radii.
+        -eps, depth of the potential well expressed in hartree. Can be either a scalar or (n x n) numpy array.
+        -sig, root of potential expressed in bohr radii. Can be either a scalar or a (n x n) numpy array.
+        -cutoff, sclar multiple of sig. The potential is shifted by the potential value at point cutoff*sig and is set to zero beyond this point.
+        Output is the total LJ potential in hartree.'''
+  
+        def LJ_pot(dist, eps=1, sig=1):
+            if dist.ndim!=0:
+                #Prevent division by zero.
+                dist[dist!=0] = 1/dist[dist!=0]
+            else:
+                dist = 1/dist
+            pot_rep = np.dot(eps*sig**12,dist**12) 
+            pot_atr = np.dot(eps*sig**6,dist**6)
+            pot = 4*(pot_rep - pot_atr)
+            return pot
+        
+        d = np.copy(dist)
+        r = sig*cutoff
+        f = lambda dist: LJ_pot(dist, eps, sig) - LJ_pot(np.asarray([r]), eps, sig)
+        res = np.zeros_like(d)
+        res += np.piecewise(d, [d<=r, d>r], [f, 0])
+        return np.sum(res, axis=-1)
+    
     
     def harmonic(coord, boxsize, pbc=False, r0=0, k=1):
         '''Calculate the potential of n particles inside a harmonic potential. Input values for this function are:
@@ -78,7 +107,32 @@ Output is a (n x dim) numpy array containing the forces acting on each particle,
         D_rep = -12 * sig**12 * dist**14
         D = 4*(eps*(D_att + D_rep))[:, :, None]*vecs
         return np.sum(D, axis=-2)
+    def LJ_cut(vecs, eps=1, sig=1, cutoff=2.5):
+        '''Calculate the Lennard Jones force in atomic units for n particles with a cutoff. Input values for this function are:
+-vecs, the pairwise distance vectors of the particles as a (n x n x dim) numpy array, expressed in bohr radii.
+-eps, depth of the potential well expressed in hartree. Can be either a scalar or (n x n) numpy array.
+        -sig, root of potential expressed in bohr radii. Can be either a scalar or a (n x n) numpy array.
+        -cutoff, scalar multiple of sig. The potential gradient is set to zero beyond the point sig*cutoff.
+Output is a (n x dim) numpy array containing the forces acting on each particle, expressed in [hartree]/[bohr radius].'''
+        def LJ_grad(vecs, eps=1, sig=1):
+            dist = distances.distances(vecs)
+            if dist.ndim!=0:
+                #Prevent division by zero.
+                dist[dist!=0] = 1/dist[dist!=0]
+            else:
+                dist = 1/dist
+            D_att = 6 * sig**6 * dist**8
+            D_rep = -12 * sig**12 * dist**14
+            D = 4*(eps*(D_att + D_rep))[ :, None]*vecs
+            return D
     
+        r = sig*cutoff
+        dist = distances.distances(vecs)
+        f = lambda vecs: LJ_grad(vecs, eps, sig)
+        res = np.zeros_like(vecs)
+        res += np.piecewise(vecs, [dist<=r, dist>r], [f, 0])
+        return np.sum(res, axis=-2)
+
     def harmonic(coord, boxsize, pbc=False, r0=0, k=1):
         '''Calculate the harmonic force in atomic units for n particles. Input values for this function are:
         -coord, the particle positions given in bohr radii.
