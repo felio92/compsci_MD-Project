@@ -81,11 +81,11 @@ class Ewald(object):
         dvec = -vectors(coord, self.boxsize)
         k_abs = np.linalg.norm(self.k_array,axis=-1)
         k_r = np.tensordot(self.k_array,dvec, axes=(-1, -1))
-        f1, f2 = np.pi/(E.a*E.L), 2*np.pi/E.L
+        f1, f2 = np.pi/(self.a*self.L), 2*np.pi/self.L
         f3=(1/k_abs**2*np.exp(-(f1*k_abs)**2))
         f4=f3[:,None,None]*np.sin(f2*k_r)
-        f5=(E.k_array[:,:,None,None]*f4[:,None,:])
-        return 4*E.q[:, None]/E.L * np.sum(f5, axis=(0, -1)).T
+        f5=(self.k_array[:,:,None,None]*f4[:,None,:])
+        return 4*self.q[:, None]/self.L * np.sum(f5, axis=(0, -1)).T
     
     def force(self, coord):
         return self.force_lr(coord) + self.force_sr(coord)
