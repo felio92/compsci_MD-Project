@@ -1,0 +1,264 @@
+
+# coding: utf-8
+
+# # Velocity Verlet
+# ## Theory
+# - like Euler numerical procedure for solving ODEs but with lower false
+# - approximating the integral with the finite sum by the Taylor expansion
+# - the cubic and higher-order terms are ignored
+# Approximation
+# 
+# $$
+# x(t+\tau)\approx x(t)+\tau \,v(t)-\frac{\tau ^2}{2m}\nabla\phi(x(t))\\
+# v(t+\tau)\approx v(t)-\frac{\tau }{2m}\left(\nabla\phi(x(t))+\nabla\phi(x(t+\tau))\right)
+# $$
+# 
+# ### Advantage:
+# - Reversible integrator 
+# - symplectic
+# - Simple integrator not converting 
+# 
+# => more stable and energy-conserving integrator than Euler
+# 
+# ### Goals
+# 
+# - timing
+# - testing
+#     - functionality
+# - visualisation
+#     - timing, numba
+#     - stability
+#     
+# ## Algorithm
+# - choice between open and closed system in potential
+# - pbc defined in algoritm 
+# - pbc and closed system condition do not work together 
+# 
+# 
+# 1. defining parameters
+#       - number of time steps
+#       - number of particles
+#       - number of dimension
+# 2. prepering the time iteration
+#       - creating positiion, velocity and acceleration container
+#       - initialization by adding the start configuration
+#       - 
+# 3. time iteration
+#       - define iteraration scheme (loop p=t-1)
+#       - vv approximation
+#       - writing the output array
+# 4. returning position_matrix, velocity_matrix, acceleration_matrix
+
+# In[1]:
+
+
+get_ipython().run_line_magic('matplotlib', 'notebook')
+import numpy as np
+from numba import jit
+import matplotlib.pyplot as plt
+from matplotlib import animation, rc
+from IPython.display import HTML
+import time
+get_ipython().run_line_magic('load_ext', 'line_profiler')
+
+
+# ### potential
+# - defining forces
+# - defining system
+#     - open system
+#     - closed system
+
+# In[2]:
+
+
+#@jit
+def potential_gradient(p,k=1):
+    return k*p
+
+
+# In[14]:
+
+
+def potential_gradient(p, boxsize, k=1):
+    p_max, p_min = boxsize[1], boxsize[0]
+    V_r = (p - (p_max - p_max/4))*(p>=p_max)
+    V_l = (p - (p_min - p_min/4))*(p<=p_min)
+    V = V_r + V_l 
+    return V  
+
+
+# ### algorithm
+
+# In[15]:
+
+
+#@jit
+def vv1(potential_gradient, position_init, velocity_init, mass, T, time_step, boxsize, pbc=False):
+    
+    """
+    The function vv realise the integration scheme of the Velocity-Verlet Algorithm. 
+    The numerical procedure for solving ODEs is based on approximating the integral by
+    Taylor expansion and ignoring the cubic and higher-order terms.
+    
+    Arguments:
+        potential_gradient (function): computes potential gradient for particle-positions 
+        position_init (numpy.ndarray(n, dim)): initial configuration in dim dimensions
+        velocity_init (numpy.ndarray(n, dim)): initial velocity in dim dimensions
+        mass (numpy.ndarray(n)): mass of each particle
+        T (int): total time of integration
+        time_step (float): step size for integration 
+        boxsize (double): first right maximum value, second left minimum value
+        pbc (boolean): periodic boundary conditions (True) or not periodic (False)
+        
+    Returns:
+        position_matrix (numpy.ndarray(size, n, dim)): configuraiton trajectory
+        velocity_matrix (numpy.ndarray(size, n, dim)): velocity trajectory
+        acceleration_matrix (numpy.ndarray(size, n, dim)): acceleration trajectory
+       
+    """
+    
+    size = int(T/time_step)        
+    n = len(position_init)         
+    dim = position_init.shape[-1]  
+    m = mass
+    p_min, p_max = boxsize[0], boxsize[1]
+    position_matrix, velocity_matrix, acceleration_matrix = np.zeros((size, n, dim)), np.zeros((size, n, dim)), np.zeros((size, n, dim))
+    position_matrix[0], velocity_matrix[0], acceleration_matrix[0] = position_init, velocity_init, potential_gradient(position_init, boxsize)
+    for t in range(1, size):
+        p = position_matrix[t-1]
+        v = velocity_matrix[t-1]
+        a = acceleration_matrix[t]
+        gp = potential_gradient(p, boxsize)
+        p_new = p + time_step*v - (time_step**2)/(2*m)*gp
+        if pbc:
+            p_new = p_new - (p_new > p_max)*(p_max-p_min)
+            p_new = p_new + (p_new < p_min)*(p_max-p_min)
+        gp_new = potential_gradient(p_new, boxsize) 
+        v_new = v - time_step/(2*m) * (gp + gp_new)
+        a = - gp_new/m                              # useless for algorithm! needed for visualisation?
+        position_matrix[t], velocity_matrix[t], acceleration_matrix[t] = p_new, v_new, a
+    return position_matrix, velocity_matrix, acceleration_matrix
+
+
+# In[17]:
+
+
+################################### short testing ###########################################
+boxsize = (-5., 5.)
+#print(boxsize[0])
+
+###### input 2D ######
+p_0 = np.array([[1., 0.]])
+v_0 = np.array([[1., 1.]])
+m = np.array([[1., 1.]])
+
+###### input 3D ######
+#p_0 = np.array([[5., 0., 0.], [0., 1., 0.]])
+#v_0 = np.array([[0., 0., 0.], [0., 0., 0.]])
+#m = np.array([[1., 1., 1.], [1., 1., 1.]])
+
+###### energy conservation ######
+res = vv1(potential_gradient, p_0, v_0, m, 100, 1/100, boxsize, pbc=True)
+#res
+#print(a[0][:,0,0])
+plt.plot(res[0][:,0, 0], res[0][:,0,1])
+
+##### kinetic energy ######
+#np.dot(res[1][:,0,0],res[1][:,0,0])*2/3 #???
+
+
+# ## visualisation and interpretation
+
+# In[ ]:
+
+
+fig, ax = plt.subplots(figsize=(6, 6))
+r_init = res[0][0]
+r_matrix = res[0]
+v_matrix = res[1]
+colors = np.arange(len(r_init))
+scat = ax.scatter(r_init[:,0], r_init[:,1], c=colors)
+circles = [plt.Circle(r, radius=0.5, fill=False) for i,r in enumerate(r_init)]
+for c in circles:
+    plt.gca().add_patch(c)
+qax = ax.quiver(r_matrix[0,:,0], r_matrix[0,:,1], v_matrix[1,:,0], v_matrix[1,:,1],np.arange(len(r_init)),scale=50, width=0.005)
+ax.set_xlim(-6, 6)
+ax.set_ylim(-6, 6)
+ax.plot(res[0][:,:, 0], res[0][:,:,1])
+def animate(i):
+    index = 4*i
+    data = r_matrix[index]
+    scat.set_offsets(data)
+    for i, c in enumerate(circles):
+        c.center = data[i]
+    qax.set_UVC(v_matrix[index,:,0],v_matrix[index,:,1])
+    qax.set_offsets(data)
+    return scat,
+
+#Writer = animation.writers['ffmpeg']
+#writer = Writer(fps=25, bitrate=1800)
+anim = animation.FuncAnimation(fig, animate, interval=1, repeat=False)
+#anim.save('LJ_Harmonic_Particles.mp4', writer=writer)
+
+
+# ## timing
+# 
+# #### loop p = t+1
+# algorithm where p and v needed to calculate the new p and v equals the current timestep
+# - total run time :  `%timeit`
+#     - 136 ms ± 3.45 ms per loop (mean ± std. dev. of 10 runs, 100 loops each)
+#     - 131 ms ± 1.74 ms per loop (mean ± std. dev. of 100 runs, 10 loops each)
+#     - 168 ms ± 19.1 ms per loop (mean ± std. dev. of 100 runs, 10 loops each) (NEW)
+#     - `@jit`: 140 ms ± 3.01 ms per loop (mean ± std. dev. of 100 runs, 10 loops each)
+#     - `@jit` (NEW):11.2 ms ± 559 µs per loop (mean ± std. dev. of 100 runs, 10 loops each)
+#     
+# - line time profiling :  `%lprun`
+# the most time-consuming step is to calculate the next p and v; 
+# followed by the calculation of the gp/gp_new and writing of the output arrays
+#    - `p[t+1] = p[t] + time_step*v[t] - (time_step**2)/(2*m)*g `
+#         - 28.7 %Time 
+#         - 29.6 %Time (new)
+#    - `v[t+1] = v[t] - time_step/(2*m) * (gp + gp_new)`
+#        - 23.6 %Time
+#        - 23.7 %Time (New)
+#     
+# 
+# #### loop p = t-1
+# algorithm where p and v needed to calculate the new p and v equals the last timestep
+# - total run time :  `%timeit`
+#      - 116 ms ± 1.93 ms per loop (mean ± std. dev. of 10 runs, 100 loops each)
+#      - 113 ms ± 1.54 ms per loop (mean ± std. dev. of 100 runs, 10 loops each)
+#      - 123 ms ± 7.63 ms per loop (mean ± std. dev. of 100 runs, 10 loops each)
+#      - `@jit`: 120 ms ± 9.09 ms per loop (mean ± std. dev. of 100 runs, 10 loops each)
+#      - `@jit`: 119 ms ± 4.25 ms per loop (mean ± std. dev. of 100 runs, 10 loops each)
+#      - `@jit`(new): 8.38 ms ± 379 µs per loop (mean ± std. dev. of 100 runs, 10 loops each) ???
+#      - (new): 128 ms ± 5.03 ms per loop (mean ± std. dev. of 100 runs, 10 loops each)
+# 
+# - line time profiling :  `%lprun`
+# the most time-consuming step is to calculate the next p and v; 
+# followed by the calculation of the gp/gp_new and riting of the output arrays 
+#    - `p_new = p + time_step*v - (time_step**2)/(2*m)*gp`
+#         - 25.7 %Time
+#         - (new) 26.7%Time 
+#    - `v_new = v - time_step/(2*m) * (gp + gp_new)`
+#         - 20.2 %Time
+#         - (new) 20.7 %Time
+# 
+# on average the loop p=t-1 is 3.8 %Time faster in calculating p_new than p=t+1
+# 
+# ### result 
+# - use loop p = t-1
+# - numba ? 
+
+# In[ ]:
+
+
+###################################  timing ################################### 
+### loop p = t-1 ###
+get_ipython().run_line_magic('lprun', '-f vv1 vv1(potential_gradient, p_0, v_0, m, 100, 1/100, boxsize, opensys=True, pbc=True)')
+get_ipython().run_line_magic('timeit', '-n 10 -r 100 vv1(potential_gradient, p_0, v_0, m, 100, 1/100, boxsize, opensys=True, pbc=True)')
+
+#### loop p = t-1 ###
+#%lprun -f vv vv(potential_gradient, p_0, v_0, m, 100, 1/100, opensys=True, pbc=False)
+#%timeit -n 10 -r 100 vv(potential_gradient, p_0, v_0, m, 100, 1/100, opensys=True, pbc=False)
+
