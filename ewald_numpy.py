@@ -4,7 +4,7 @@ from scipy.special import erfc
 
 class Ewald(object):
     #To Do: Better documentation so that retracing the programming steps becomes easier.
-    def __init__(self, charges, boxsize,alpha, r_cutoff, n_max, k_cutoff):
+    def __init__(self, charges, boxsize, alpha, r_cutoff, n_max, k_cutoff):
         #probably includes redundant parameters, will remove some in the future
         self.boxsize = boxsize
         self.L = boxsize[1] - boxsize[0]
