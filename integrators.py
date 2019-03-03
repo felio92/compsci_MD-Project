@@ -1,6 +1,6 @@
 import numpy as np
 
-def euler(potential_gradient, position_init, velocity_init, mass, T, time_step, box):
+def euler(potential_gradient, position_init, velocity_init, mass, T, time_step, boxsize=(0,1)):
     """
     This function realise the Euler integration scheme. This scheme approximating the 
     integral with the finite sum by the Taylor expansion, whereby the quadratic and 
@@ -14,7 +14,7 @@ def euler(potential_gradient, position_init, velocity_init, mass, T, time_step, 
         mass (numpy.ndarray(n)): mass of each particle
         T (int): total time of integration
         time_step (float): step size for integration 
-        box (double): first right maximum value, second left minimum value
+        boxsize (double): first right maximum value, second left minimum value
 
         
     Returns:
@@ -28,19 +28,19 @@ def euler(potential_gradient, position_init, velocity_init, mass, T, time_step, 
     dim = position_init.shape[-1]
     m = mass
     position_matrix, velocity_matrix, acceleration_matrix = np.zeros((size, n, dim)), np.zeros((size, n, dim)), np.zeros((size, n, dim))
-    position_matrix[0], velocity_matrix[0], acceleration_matrix[0] = position_init, velocity_init, - 1/m *potential_gradient(position_init, box)
+    position_matrix[0], velocity_matrix[0], acceleration_matrix[0] = position_init, velocity_init, - 1/m * potential_gradient(position_init, boxsize=boxsize)
     for t in range(1, size):
         p = position_matrix[t-1]
         v = velocity_matrix[t-1]
         a = acceleration_matrix[t]
-        gp = potential_gradient(p, box)
+        gp = potential_gradient(p, boxsize)
         p_new = p + time_step*v
         v_new = v - time_step/m * gp
-        a = - potential_gradient(p_new, box)/m
+        a = - potential_gradient(p_new, boxsize)/m
         position_matrix[t], velocity_matrix[t], acceleration_matrix[t] = p_new, v_new, a
     return position_matrix, velocity_matrix, acceleration_matrix
 
-def vv(potential_gradient, position_init, velocity_init, mass, T, time_step, boxsize, pbc=False):
+def vv(potential_gradient, position_init, velocity_init, mass, T, time_step, boxsize=(0,1), pbc=False):
     
     """
     The function vv realise the integration scheme of the Velocity-Verlet Algorithm. 
@@ -70,7 +70,7 @@ def vv(potential_gradient, position_init, velocity_init, mass, T, time_step, box
     m = mass
     p_min, p_max = boxsize[0], boxsize[1]
     position_matrix, velocity_matrix, acceleration_matrix = np.zeros((size, n, dim)), np.zeros((size, n, dim)), np.zeros((size, n, dim))
-    position_matrix[0], velocity_matrix[0], acceleration_matrix[0] = position_init, velocity_init, potential_gradient(position_init, boxsize)
+    position_matrix[0], velocity_matrix[0], acceleration_matrix[0] = position_init, velocity_init, potential_gradient(position_init, boxsize=boxsize)
     for t in range(1, size):
         p = position_matrix[t-1]
         v = velocity_matrix[t-1]
