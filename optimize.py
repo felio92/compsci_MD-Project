@@ -1,7 +1,7 @@
 import numpy as np
 from distances import *
 
-def descent(x, grad, a=1e-4, prec=1e-10, maxst=1e5, boxsize=(0, 1), pbc=False, save_config=False, ewald=False ):
+def descent(x, grad, a=1e-4, prec=1e-10, maxst=1e5, boxsize=(0, 1), pbc=False, save_config=True, ewald=False ):
     """Gradient Descent
     
     Arguments:
