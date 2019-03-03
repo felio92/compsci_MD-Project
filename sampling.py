@@ -19,10 +19,13 @@ def new_config(coord,stepsize, boxsize, pbc=False):
         proposal += (proposal > max_a)*(-1)*(proposal-max_a) + (proposal < min_a)*(min_a-proposal)
     return proposal
 @jit
-def mcmc(potential, n_atoms,dim,n_steps,stepsize, beta=1, boxsize = (0,1),pbc=False):
+def mcmc(potential, n_atoms,dim,n_steps,stepsize=10000, beta=1, boxsize = (0,1),pbc=False, save_config=False, init_config=None):
     min_a, max_a = boxsize
-    coord = np.random.uniform(min_a, max_a, size=(n_atoms, dim))
-    for i in range(n_steps):
+    coord = (np.random.uniform(min_a, max_a, size=(n_atoms, dim)) if init_config == None else init_config)
+    if save_config:
+        config = np.zeros((n_steps, n_atoms, dim))
+        config[0] = coord
+    for i in range(1,n_steps):
         #calculate the sum of potentials
         sumpot = np.sum(potential(coord, pbc))
         #propose new configuration (normally distributed around the old coordinates, variance given by stepsizei)
@@ -30,4 +33,7 @@ def mcmc(potential, n_atoms,dim,n_steps,stepsize, beta=1, boxsize = (0,1),pbc=Fa
         proposed_sumpot = np.sum(potential(proposal, pbc))
         if sumpot >= proposed_sumpot or np.exp((sumpot-proposed_sumpot)*beta) > np.random.uniform(0,1):
             coord = proposal
+        if save_config: config[i] = coord
+    if save_config:
+        return config
     return coord

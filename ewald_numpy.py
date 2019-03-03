@@ -42,7 +42,7 @@ class Ewald(object):
             self.k_array = np.concatenate([[i,j,1]*self.k_array for i in [-1, 1] for j in [-1, 1]])
               
     def pot_sr(self, coord):
-        i_dvec = self.n_array[:,None,None]-vectors(coord, self.boxsize)
+        i_dvec = self.L*self.n_array[:,None,None]-vectors(coord, self.boxsize)
         dist = distances(i_dvec) #calculates the pairwise particle distances, including images
         mask = dist>=self.rc #particle-particle interactions are ignored if interparticle distance exceeds cutoff radius
         dist = np.ma.masked_array(dist, dist==0) #division by zero is prevented
@@ -69,7 +69,7 @@ class Ewald(object):
         return np.ma.sum((self.pot_sr(coord),self.pot_lr(coord), - self.pot_self()))
     
     def force_sr(self, coord):
-        i_dvec = self.n_array[:,None,None]-vectors(coord, self.boxsize)
+        i_dvec = self.L*self.n_array[:,None,None]-vectors(coord, self.boxsize)
         dist = distances(i_dvec)
         mask = dist>=self.rc #particle-particle interactions are ignored if interparticle distance exceeds cutoff radius
         dist = np.ma.masked_array(dist, mask)

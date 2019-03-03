@@ -1,7 +1,7 @@
 import numpy as np
 from distances import *
 
-def descent(x, grad, a=1e-4, prec=1e-10, maxst=1e5, boxsize=(0, 1), pbc=False, ewald=False ):
+def descent(x, grad, a=1e-4, prec=1e-10, maxst=1e5, boxsize=(0, 1), pbc=False, save_config=False, ewald=False ):
     """Gradient Descent
     
     Arguments:
@@ -16,20 +16,25 @@ def descent(x, grad, a=1e-4, prec=1e-10, maxst=1e5, boxsize=(0, 1), pbc=False, e
         x: position array,
         step: # of steps needed to convergence
     """
-    x = x[None, :, :]
+    if save_config:
+        config = np.zeros((maxst,)+x.shape)
+        config[0] = x
     x_min, x_max = boxsize[0], boxsize[1]
     step = 0
-    vecs = vectors(x[-1], boxsize, pbc=pbc^ewald)
-    f = grad(x[-1])
-    x1 = x[-1] - a * f
-    while step < maxst and np.linalg.norm(x[-1] - x1) > prec:
+    vecs = vectors(x, boxsize, pbc=pbc^ewald)
+    f = grad(x)
+    x1 = x - a * f
+    step+=1
+    while step < maxst and np.linalg.norm(x - x1) > prec:
         if pbc:
             x1 = x1 - (x1 > x_max)*(x_max-x_min)
             x1 = x1 + (x1 < x_min)*(x_max-x_min)
-        x = np.append(x, x1[None, :, :], axis=0)
-        vecs = vectors(x[-1], boxsize, pbc=pbc^ewald)
-        f = grad(x[-1])
-        x1 = x[-1] - a * f
+        if save_config: config[step] = x1
+        vecs = vectors(x1, boxsize, pbc=pbc^ewald)
+        f = grad(x1)
+        x1 = x1 - a * f
         step += 1
-    return x, step
+    if save_config:
+        return config[:step], step
+    return x1, step
 
