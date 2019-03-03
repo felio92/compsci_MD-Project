@@ -23,7 +23,7 @@ import random
 #The following function computes connecting vectors between particles with or without respect to PBC
 #INPUT: coordinate array of particles of shape (n,2)
 #OUTPUT: array of connecting vectors of all particles of shape (n,n,2)
-def vectors(coord, boxsize, pbc=False):
+def vectors(coord, boxsize=(0,1), pbc=False):
     vecs = coord[:, None, :] - coord[None, :, :]
     if not pbc:
         return vecs
@@ -36,14 +36,14 @@ def vectors(coord, boxsize, pbc=False):
 #INPUT: array of connecting vectors of all particles of shape (n,n,2)
 #OUTPUT: array of distances between all particles of shape (n,n)
 def distances(vectors):
-    return np.linalg.norm(vectors,axis=-1)
+    return np.linalg.norm(vectors, axis=-1)
 
 #Normalized vectors are needed for the integrator to calculate forces
 #This function will normalize the list of connecting vectors obtained from function 'vectors'
 
 #INPUT: array of connecting vectors of all particles of shape (n,n,2) and the norm of all those vectors of shape (n,n)
 #OUTPUT: array of normalized connecting vectors of all particles of shape (n,n,2)
-def normalize(vectors,distances):
+def normalize(vectors, distances):
     #set all elements with zero distance to 1 to calculate the norm (avoid ZeroDivisionError)
-    return vectors/((distances==0)*1 + distances)[:,:,None]
+    return vectors/((distances==0)*1 + distances)[:, :, None]
 
