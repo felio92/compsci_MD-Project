@@ -37,4 +37,3 @@ def descent(x, grad, a=1e-4, prec=1e-10, maxst=1e5, boxsize=(0, 1), pbc=False, s
     if save_config:
         return config[:step], step
     return x1, step
-
