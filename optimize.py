@@ -1,6 +1,6 @@
 import numpy as np
 
-def descent( x, grad, a=1e-4, prec=1e-6, maxst=1e5, boxsize=(0,1), pbc=False, save_config=False):
+def descent( x, grad, a=1e-4, prec=1e-6, maxst=1e5, boxsize=(0,1), pbc=False, save_config=True):
     """Gradient Descent
 
     Arguments:
