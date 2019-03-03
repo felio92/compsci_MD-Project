@@ -1,34 +1,37 @@
-import numpy as np
-from distances import *
-
-def descent(x, grad, a=1e-4, prec=1e-10, maxst=1e5, boxsize=(0, 1), pbc=False, ewald=False ):
+def descent( coord, grad, a=1e-4, prec=1e-6, maxst=1e5, boxsize=(0,1), pbc=False, ewald=False ):
+    import numpy as np
+    from distances import vectors
     """Gradient Descent
-    
+
     Arguments:
-        x    (float): position vectors (dim = n x 3)
-        q: charge
-        a    (float): 'learning rate' alpha = 1e-4
-        prec (float): difference between steps, precision = 1e-10
-        maxst  (int): max # of steps, maxst = 1e6
-        k: factor harmonic pot
-    
+        coord   (float): position vectors (dim = n x 3)
+        grad (function): gradient calculation
+        a       (float): alpha, 'learning rate', influence of gradient per step
+        prec    (float): precision, difference between steps
+        maxst     (int): max # of steps
+
     Output:
-        x: position array,
-        step: # of steps needed to convergence
-    """
-    x = x[None, :, :]
-    x_min, x_max = boxsize[0], boxsize[1]
+        x    (float): tensor of position vectors at each step (dim = n x 3 x step)
+        step: # of steps needed to converge"""
+    
+    assert int(maxst) % maxst == 0
+    
     step = 0
-    vecs = vectors(x[-1], boxsize, pbc=pbc^ewald)
-    f = grad(x[-1])
-    x1 = x[-1] - a * f
-    while step < maxst and np.linalg.norm(x[-1] - x1) > prec:
-        if pbc:
-            x1 = x1 - (x1 > x_max)*(x_max-x_min)
-            x1 = x1 + (x1 < x_min)*(x_max-x_min)
-        x = np.append(x, x1[None, :, :], axis=0)
-        vecs = vectors(x[-1], boxsize, pbc=pbc^ewald)
-        f = grad(x[-1])
-        x1 = x[-1] - a * f
+    x = np.zeros((int(maxst),) + coord.shape)
+    x[step] = coord
+    x1 = x[step] - a * grad(x[step])
+    if pbc:
+        xmin, xmax = boxsize[0], boxsize[1]
+        assert xmin < xmax
+        L = xmax - xmin
+        x1[x1 < xmin] = xmax - (xmin - x1[x1 < xmin]) %  L
+        x1[x1 > xmax] = xmin + (x1[x1 > xmax] - xmax) %  L
+    while step+1 < maxst and np.linalg.norm(x[step] - x1) > prec:
         step += 1
+        x[step] = x1
+        x1 = x[step] - a * grad(x[step])
+        if pbc:
+            x1[x1 < xmin] = xmax - (xmin - x1[x1 < xmin]) %  L
+            x1[x1 > xmax] = xmin + (x1[x1 > xmax] - xmax) %  L
+    return x[:step], step
 
