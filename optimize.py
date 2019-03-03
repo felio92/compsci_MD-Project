@@ -1,6 +1,4 @@
 def descent( coord, grad, a=1e-4, prec=1e-6, maxst=1e5, boxsize=(0,1), pbc=False, ewald=False ):
-    import numpy as np
-    from distances import vectors
     """Gradient Descent
 
     Arguments:
@@ -13,6 +11,8 @@ def descent( coord, grad, a=1e-4, prec=1e-6, maxst=1e5, boxsize=(0,1), pbc=False
     Output:
         x    (float): tensor of position vectors at each step (dim = n x 3 x step)
         step: # of steps needed to converge"""
+    import numpy as np
+    from distances import vectors
     
     assert int(maxst) % maxst == 0
     
