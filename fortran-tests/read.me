@@ -1,0 +1,14 @@
+
+Compile fortran 90 file with
+  # python -m numpy.f2py -c -m dirlatt dirlatt.f90
+--> dirlatt.cpython-37m-x86_64-linux-gnu.so
+
+Import dirlatt via in jupyter
+(__init__.py)
+  # from fortwald.dirlatt import dirvec
+
+Produce direct lattice vectors with type(x)=int
+  # dirvec(x)
+
+
+dirfast faster version of dirlatt
