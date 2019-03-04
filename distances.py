@@ -25,12 +25,12 @@ import random
 #OUTPUT: array of connecting vectors of all particles of shape (n,n,2)
 def vectors(coord, boxsize=(0,1), pbc=False):
     vecs = coord[:, None, :] - coord[None, :, :]
-    if pbc:
-        xmin, xmax = boxsize[0], boxsize[1]
-        assert xmin < xmax
-        L = xmax - xmin
-        vecs[vecs < xmin] = xmax - (xmin - vecs[vecs < xmin]) %  L
-        vecs[vecs > xmax] = xmin + (vecs[vecs > xmax] - xmax) %  L
+    if not pbc:
+        return vecs
+    elif pbc:
+        L = boxsize[1] - boxsize[0] #calculate boxlength
+        vecs += (vecs<-0.5*L)*L - (vecs>0.5*L)*L
+        return vecs
     return vecs
     
 #Euclidean distance calculator
