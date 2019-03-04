@@ -21,7 +21,7 @@ def new_config(coord,stepsize, boxsize, pbc=False):
 
 def mcmc(potential, n_atoms,dim,n_steps,stepsize=0.01, beta=1, boxsize = (0,1),pbc=False, save_config=False, init_config=None):
     min_a, max_a = boxsize
-    coord = (np.random.uniform(min_a, max_a, size=(n_atoms, dim)) if init_config == None else init_config)
+    coord = (np.random.uniform(min_a, max_a, size=(n_atoms, dim)) if (np.asarray([init_config == None])).all() else init_config)
     if save_config:
         config = np.zeros((n_steps, n_atoms, dim))
         config[0] = coord
