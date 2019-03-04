@@ -19,7 +19,7 @@ def new_config(coord,stepsize, boxsize, pbc=False):
         proposal += (proposal > max_a)*(-1)*(proposal-max_a) + (proposal < min_a)*(min_a-proposal)
     return proposal
 
-def mcmc(potential, n_atoms,dim,n_steps,stepsize=10000, beta=1, boxsize = (0,1),pbc=False, save_config=False, init_config=None):
+def mcmc(potential, n_atoms,dim,n_steps,stepsize=0.01, beta=1, boxsize = (0,1),pbc=False, save_config=False, init_config=None):
     min_a, max_a = boxsize
     coord = (np.random.uniform(min_a, max_a, size=(n_atoms, dim)) if init_config == None else init_config)
     if save_config:
