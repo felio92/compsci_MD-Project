@@ -1,21 +1,25 @@
 import numpy as np
 
-def descent( x, grad, a=1e-4, prec=1e-6, maxst=1e5, boxsize=(0,1), pbc=False, save_config=False):
+def descent( x, grad, a=1e-4, prec=1e-6, maxst=1e5, boxsize=(0,1), pbc=False, save_config=True):
     """Gradient Descent
 
     Arguments:
-        coord    (float): position vectors (dim = n x 3)
+        x        (float): position vectors (dim = n x 3)
         grad  (function): gradient calculation
         a        (float): alpha, 'learning rate', influence of gradient per step
         prec     (float): precision, difference between steps
         maxst      (int): max # of steps
-        boxsize (double): tuple, box is quadratic/cubic
-        pbc == True: enables periodic boundaries
-        save_config == True: saves all positions
+        boxsize (double): tuple, size of the (quadratic/cubic) box
+        pbc == True: enable periodic boundaries
+        save_config == True: save all positions
 
     Output:
-        x    (float): tensor of position vectors at each step (dim = n x 3 x step)
-        step: # of steps needed to converge"""
+        1) save_config == True: 
+            config (float): tensor of position vectors at each step (dim = n x 3 x step)
+            step     (int): # of steps needed to converge
+        2) save_config == False:
+            x1 = config[-1]
+     """
     assert int(maxst) % maxst == 0
     # Initialize:
     step = 0

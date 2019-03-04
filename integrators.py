@@ -1,5 +1,7 @@
 import numpy as np
+from numba import jit
 
+@jit
 def euler(potential_gradient, position_init, velocity_init, mass, T, time_step, boxsize=(0,1)):
     """
     This function realise the Euler integration scheme. This scheme approximating the 
@@ -40,6 +42,7 @@ def euler(potential_gradient, position_init, velocity_init, mass, T, time_step, 
         position_matrix[t], velocity_matrix[t], acceleration_matrix[t] = p_new, v_new, a
     return position_matrix, velocity_matrix, acceleration_matrix
 
+@jit
 def vv(potential_gradient, position_init, velocity_init, mass, T, time_step, boxsize=(0,1), pbc=False):
     
     """
@@ -85,7 +88,8 @@ def vv(potential_gradient, position_init, velocity_init, mass, T, time_step, box
         a = - gp_new/m                              # useless for algorithm! needed for visualisation?
         position_matrix[t], velocity_matrix[t], acceleration_matrix[t] = p_new, v_new, a
     return position_matrix, velocity_matrix, acceleration_matrix
- 
+
+@jit
 def langevin(potential_gradient, position_init, velocity_init, mass, total_time, time_step, damping, beta, temp, boxsize, pbc=False):
     
     """

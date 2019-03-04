@@ -9,12 +9,15 @@ class potentials(object):
     -harmonic(coord, boxsize, pbc=False, r0=0, k=1)
     All inputs are assumed to be dimensionless, with the parameters being expressed in atomic units. More information can be found in the docstring of the respective potential.'''
     def pot_barrier(p, boxsize):
-        p_max, p_min = boxsize[0], boxsize[1]
+        '''
+        darüber müssen wir nachdenken! ich denke das
+        '''
+        p_min, p_max = boxsize[0], boxsize[1]
         L = p_max - p_min
-        V_r = 1/2*(p - (p_max - L/4))**2*(p>=p_max)
-        V_l = 1/2*(p - (p_min + L/4))**2*(p<=p_min)
-        V = V_r+ V_l 
-        return V  
+        V_r = 1/2*(p - (p_max - L/4))**2 * (p>=p_max)
+        V_l = 1/2*(p - (p_min + L/4))**2 * (p<=p_min)
+        V = V_r + V_l 
+        return np.sum(V, axis=-1)*5  
     def coulomb(dist, q):
         '''Calculate the scalar coulomb potential in atomic units of n charged particles. Input values for this function are:
         -dist, the pairwise distances of the particles as a (n x n) numpy array, expressed in bohr radii.
@@ -94,12 +97,20 @@ class gradients(object):
         All inputs are assumed to be dimensionless, with the parameters being expressed in atomic units. More information can be found in the docstring of the respective gradient.'''
     
     def pot_barrier(p, boxsize):
-        p_max, p_min = boxsize[1], boxsize[0]
+        '''
+        Calculate the gradient of the barrier potential of the box. 
+        Input
+        p (numpy.ndarray(n, dim)): initial configuration in dim dimensions
+        boxsize (douple): min box edges, max box edges
+        Output
+        V (): gradient of barrier potential, for stronger potential (needed for small boxes with few particles) multiplication with constant.
+        '''
+        p_min, p_max = boxsize[0], boxsize[1]
         L = p_max - p_min
         V_r = (p - (p_max - L/4))*(p>=p_max)
         V_l = (p - (p_min + L/4))*(p<=p_min)
         V = V_r+ V_l 
-        return V  
+        return V *5 
     
     def coulomb(vecs, q):
         '''Calculate the coulomb force in atomic units for n charged particles. Input values for this function are:

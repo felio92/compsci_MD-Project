@@ -18,8 +18,8 @@ def new_config(coord,stepsize, boxsize, pbc=False):
         #go back to edge of box if outside
         proposal += (proposal > max_a)*(-1)*(proposal-max_a) + (proposal < min_a)*(min_a-proposal)
     return proposal
-@jit
-def mcmc(potential, n_atoms,dim,n_steps,stepsize=10000, beta=1, boxsize = (0,1),pbc=False, save_config=False, init_config=None):
+
+def mcmc(potential, n_atoms,dim,n_steps,stepsize=0.01, beta=1, boxsize = (0,1),pbc=False, save_config=False, init_config=None):
     min_a, max_a = boxsize
     coord = (np.random.uniform(min_a, max_a, size=(n_atoms, dim)) if init_config == None else init_config)
     if save_config:
@@ -33,7 +33,9 @@ def mcmc(potential, n_atoms,dim,n_steps,stepsize=10000, beta=1, boxsize = (0,1),
         proposed_sumpot = np.sum(potential(proposal, pbc))
         if sumpot >= proposed_sumpot or np.exp((sumpot-proposed_sumpot)*beta) > np.random.uniform(0,1):
             coord = proposal
-        if save_config: config[i] = coord
+        if save_config:
+            config[i] = coord
     if save_config:
         return config
+    
     return coord
